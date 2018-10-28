@@ -41,7 +41,7 @@
         <h1 id="clock2"></h1>
     </div>
     <div class="container" style="">
-        <div style="width:640px;">
+        <div id="first_line" style="width:640px;">
             <h4 style="display:inline-block">what would you like to study? </h4>
             <div id="pomodoro" style="display:inline-block; float: right;">
                 <button class="btn btn-outline-secondary btn-sm" id="study" type="button">Study</button>
@@ -51,22 +51,22 @@
 
         </div>
 
-        <div class="input-group mb-3 " style="width: 640px;">
+        <div id="search_container" class="input-group mb-3 " style="width: 640px;">
             <input type="text" id="topic" class="form-control" placeholder="Search..." aria-label="Recipient's username" aria-describedby="basic-addon2">
             <div class="input-group-append">
                 <button class="btn btn-outline-secondary" id="wtl" type="button">Button</button>
             </div>
-
         </div>
-        
+
         <div id="player"></div>
 
-        <div>
+        <div id="player_controls">
             <button class="btn btn-outline-secondary btn-sm" id="go_back_root" type="button">Go Back Root</button>
             <button class="btn btn-outline-secondary btn-sm" id="go_back" type="button">Go Back Parent</button>
             <button class="btn btn-outline-secondary btn-sm" id="go_back_sibling" type="button">Go Back </button>
         </div>
-        <div>
+
+        <div id="video_nav">
             <ol id="tree_struc">
             </ol>
         </div>
@@ -76,15 +76,20 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
     <script>
         // 2. This code loads the IFrame Player API code asynchronously.
-        var study_interval;
-        var break_interval;
-        var study_seconds = 30 * 60;
-        var break_seconds = 5 * 60;
+        var timer = {
+            "study_interval": undefined,
+            "break_interval": undefined,
+            "study_seconds": 30 * 60,
+            "break_seconds": 5 * 60,
+
+        }
+
+
         var study_btn = document.getElementById("study")
-        study_btn.addEventListener("click", startTimer(study_seconds));
+        study_btn.addEventListener("click", startTimer(timer.study_seconds));
         var btn = document.querySelector("#wtl")
         var go_back_btn = document.querySelector("#go_back")
-        go_back_btn.addEventListener("click", handleGoBack);
+        go_back_btn.addEventListener("click", handleGoBackParent);
         var go_back_sibling = document.querySelector("#go_back_sibling")
         go_back_sibling.addEventListener("click", handleGoBackSibling);
         var go_back_root = document.querySelector("#go_back_root")
@@ -129,7 +134,7 @@
         }
 
 
-        function handleGoBack() {
+        function handleGoBackParent() {
             var input = document.getElementById("topic").value = youtube_tree.parent ? youtube_tree.parent.topic : youtube_tree.topic
             btn.click()
         }
@@ -137,7 +142,7 @@
         function handleGoBackSibling() {
             var input = document.getElementById("topic");
             if (youtube_tree.parent.children[0].topic === youtube_tree.topic) {
-                handleGoBack();
+                handleGoBackParent();
                 return
             }
             console.log(youtube_tree);
@@ -154,12 +159,10 @@
         }
 
         function handleGoBackRoot() {
-            var input = document.getElementById("topic").value = root_tree.topic
+            var input = document.getElementById("topic").value = root_tree.topic;
             btn.click()
         }
-        // function handleTopicSearch() {
-        // cueTopicSearch()
-        // }
+
 
         // 4. The API will call this function when the video player is ready.
         function onPlayerReady(event) {
@@ -181,31 +184,39 @@
             player.stopVideo();
         }
 
-        function reset() {
+
+        function resetTimer() {
             var c = document.getElementById("clock");
             c.textContent = "00:00:00";
         }
 
+
         function stopTimer(interval) {
             clearInterval(interval)
-            reset()
+            resetTimer()
         }
 
+        //starts study timer
         function startTimer(seconds) {
             var bt = document.getElementById("breaktime")
             bt.className = "off";
             var c = document.getElementById("clock");
             var seconds_left = seconds;
-            study_interval = setInterval(function() {
+            timer.study_interval = setInterval(function() {
                 clock.textContent = "00:" + Math.floor(seconds_left / 60) + ":" + seconds_left % 60;
                 seconds_left--;
                 if (seconds_left <= 0) {
-                    stopTimer(study_interval);
-                    startBreakTimer(break_seconds)
+                    stopTimer(timer.study_interval);
+                    startBreakTimer(timer.break_seconds)
                 }
             }, 1000)
         }
 
+        //stops vid
+        //stops interval
+        //resets timer to break seconds
+        //enables break wall
+        //starts timer
         function startBreakTimer(seconds) {
             var bt = document.getElementById("breaktime")
             bt.className = "";
@@ -213,13 +224,13 @@
             var c = document.getElementById("clock");
             var c2 = document.getElementById("clock2")
             var seconds_left = seconds;
-            break_interval = setInterval(function() {
+            timer.break_interval = setInterval(function() {
                 clock.textContent = "00:" + Math.floor(seconds_left / 60) + ":" + seconds_left % 60;
                 c2.textContent = "00:" + Math.floor(seconds_left / 60) + ":" + seconds_left % 60;
                 seconds_left--;
                 if (seconds_left <= 0) {
-                    stopTimer(break_interval);
-                    startTimer(study_seconds)
+                    stopTimer(timer.break_interval);
+                    startTimer(timer.study_seconds)
                 }
             }, 1000)
         }
@@ -236,6 +247,7 @@
             }
         }
 
+        //find node by topic
         function find(topic, tree) {
             if (tree.topic === topic) {
                 return tree
@@ -247,6 +259,10 @@
             return false;
         }
 
+        //based on the search value
+        //cue correct playlist
+        //if new topic - make new tree
+        //add playlist to tree
         function cueTopicSearch() {
             var input = document.querySelector("#topic")
             input = input.value;
@@ -265,13 +281,14 @@
                 startSeconds: 0,
                 suggestedQuality: "large"
             })
-            setTimeout(function(){
+            setTimeout(function() {
                 youtube_tree.playlist = player.getPlaylist()
             }, 1000)
             setTimeout(updateVisualTree())
             search_history.push(input);
         }
 
+        //returns n spaces " "
         function spaces(n) {
             var toret = ""
             for (var i = 0; i < n; i++) {
@@ -280,12 +297,14 @@
             return toret
         }
 
+        //clears old tree & prints new tre
         function updateVisualTree() {
             var ts = document.getElementById("tree_struc");
             ts.innerHTML = "";
             printTree(root_tree, 0, ts, "li")
         }
 
+        //traverses root tree and prints to ordered list
         function printTree(tree, num, elem, str_elem) {
             var ihtml = spaces(num) + tree.topic;
             var li = document.createElement(str_elem);
